@@ -18,3 +18,4 @@ _spec.loader.exec_module(_module)
 STAIRInferenceEngine = _module.STAIRInferenceEngine
 LeafTrie = _module.LeafTrie
 TrieConstrainedLogitsProcessor = _module.TrieConstrainedLogitsProcessor
+

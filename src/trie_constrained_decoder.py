@@ -102,3 +102,4 @@ class TrieConstrainedLogitsProcessor(LogitsProcessor):
             mask[batch_idx, allowed_tokens] = 0.0
             
         return scores + mask
+

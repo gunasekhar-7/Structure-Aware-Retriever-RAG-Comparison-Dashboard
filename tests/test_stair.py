@@ -111,3 +111,4 @@ def test_stair_toc_breadcrumb_path():
     breadcrumb = engine.get_toc_tree("Section 3.2: Task Groups")
     assert "Chapter 3" in breadcrumb
     assert "Section 3.2" in breadcrumb
+
