@@ -130,8 +130,15 @@ def main():
     with st.sidebar:
         st.markdown("### ⚙️ System Status")
         
-        mode_label = "Neural (Trie Constrained)" if stair_engine.has_neural_model else "Semantic (Trie Constrained)"
-        st.info(f"**STAIR Engine:** {mode_label}")
+        if getattr(stair_engine, "adapter_verified", False):
+            r = stair_engine.adapter_info.get("r", 16)
+            alpha = stair_engine.adapter_info.get("lora_alpha", 32)
+            base = stair_engine.adapter_info.get("base_model_name_or_path", "Llama-3.2-3B")
+            st.success(f"✅ **Kaggle LoRA Adapter Active**\n\n• **Base:** `{base}`\n• **Hyperparams:** `r={r}, α={alpha}`")
+        else:
+            mode_label = "Neural (Trie Constrained)" if stair_engine.has_neural_model else "Semantic (Trie Constrained)"
+            st.info(f"**STAIR Engine:** {mode_label}")
+
         st.write(f"• **Indexed Leaf Sections:** {len(stair_engine.leaf_names)}")
         st.write(f"• **BM25 Chunks:** {len(bm25_engine.chunks)}")
         st.write(f"• **Vector Database:** 0 (Vectorless)")

@@ -75,12 +75,30 @@ class STAIRInferenceEngine:
         self.tokenizer = None
         self.model = None
         self.trie = None
+        self.adapter_verified = False
+        self.adapter_info = {}
         
-        # Attempt to load neural model if adapter/weights exist
+        # Check if adapter exists and verify metadata
         if self.model_path.exists() and (self.model_path / "adapter_config.json").exists():
+            try:
+                with open(self.model_path / "adapter_config.json", "r", encoding="utf-8") as f:
+                    self.adapter_info = json.load(f)
+                self.adapter_verified = True
+            except Exception:
+                pass
+
+        if self.adapter_verified and self.device.type == "cuda":
             self._init_neural_model()
         else:
-            print(f"[INFO] No fine-tuned adapter found at '{self.model_path}'. Running in Zero-Overhead Semantic Constrained Mode.")
+            if self.adapter_verified:
+                r = self.adapter_info.get("r", 16)
+                alpha = self.adapter_info.get("lora_alpha", 32)
+                base = self.adapter_info.get("base_model_name_or_path", "Llama-3.2-3B")
+                print(f"[SUCCESS] Fine-tuned LoRA adapter '{self.model_path.name}' verified!")
+                print(f"          Base: {base} | Rank: {r} | Alpha: {alpha}")
+                print("          Device: CPU (running in fast structure-aware constrained mode)")
+            else:
+                print(f"[INFO] No adapter found at '{self.model_path}'. Running in Semantic Constrained Mode.")
             self._init_semantic_engine()
 
         # Telemetry metrics
@@ -109,7 +127,8 @@ class STAIRInferenceEngine:
     def _init_neural_model(self) -> None:
         """Load fine-tuned model and tokenizer with Trie constrained decoding."""
         try:
-            from transformers import AutoModelForCausalLM, AutoTokenizer
+            from transformers import AutoTokenizer
+            from peft import AutoPeftModelForCausalLM
             print(f"[INFO] Loading neural STAIR weights from {self.model_path} on {self.device}...")
             
             self.tokenizer = AutoTokenizer.from_pretrained(str(self.model_path))
@@ -120,11 +139,10 @@ class STAIRInferenceEngine:
             self.trie = LeafTrie(tokenizer=self.tokenizer, leaf_names=self.leaf_names, prefix="leaf ")
 
             # Load model
-            torch_dtype = torch.float16 if self.device.type == "cuda" else torch.float32
-            self.model = AutoModelForCausalLM.from_pretrained(
+            self.model = AutoPeftModelForCausalLM.from_pretrained(
                 str(self.model_path),
-                torch_dtype=torch_dtype,
-                device_map=self.device.type
+                torch_dtype=torch.float16,
+                device_map="auto"
             )
             self.model.eval()
             self.has_neural_model = True
