@@ -195,3 +195,4 @@ MIT License. If using this architecture in your research or portfolio:
   year={2026}
 }
 ```
+"# Structure-Aware-Retriever-RAG-Comparison-Dashboard" 
