@@ -1,0 +1,30 @@
+# Web UI
+streamlit>=1.28.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# PDF & Document Processing
+PyMuPDF>=1.24.0
+
+# Retrieval & Baseline Algorithms
+rank-bm25>=0.2.2
+numpy>=1.24.0
+
+# ML / Fine-Tuning & LLM Inference
+torch>=2.0.0
+transformers>=4.36.0
+datasets>=2.14.0
+peft>=0.7.0
+trl>=0.7.0
+accelerate>=0.26.0
+
+# GPU & Kaggle Fine-Tuning Stack
+# Note: unsloth and bitsandbytes are used in Kaggle Linux T4 environments
+# On Windows, native PyTorch / transformers fallback is supported
+bitsandbytes>=0.41.0
+unsloth>=2024.5.0
+
+# Development, Testing & Utilities
+pydantic>=2.0.0
+tqdm>=4.66.0
+pytest>=7.4.0

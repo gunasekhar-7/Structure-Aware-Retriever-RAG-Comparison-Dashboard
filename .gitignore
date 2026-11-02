@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# PyTorch / Models / Checkpoints
+*.pt
+*.bin
+*.safetensors
+stair_lora_adapter/
+stair_lora_adapter_*/
+checkpoint-*/
+runs/
+wandb/
+
+# Data & PDF files (exclude large binaries, keep sample data)
+data/*.pdf
+*.log
+
+# Environment variables
+.env
+.env.local
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test & Coverage
+.pytest_cache/
+.coverage
+htmlcov/

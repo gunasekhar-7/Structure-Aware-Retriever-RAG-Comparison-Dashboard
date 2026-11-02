@@ -1,0 +1,74 @@
+{
+  "num_test_queries": 5,
+  "stair": {
+    "hit_at_1_accuracy": 100.0,
+    "section_hallucination_rate": 0.0,
+    "context_boundary_integrity": 100.0,
+    "avg_latency_ms": 0.05,
+    "vector_db_dependency": "None (Vectorless)"
+  },
+  "traditional_chunked_bm25": {
+    "hit_at_1_accuracy": 60.0,
+    "context_boundary_integrity": 0.0,
+    "truncation_damage_rate": 100.0,
+    "avg_latency_ms": 0.21,
+    "vector_db_dependency": "Chunk Store Required"
+  },
+  "detailed_results": [
+    {
+      "query": "What happens when blocking calls are made inside an event loop in 3.2: Task Groups, Exception Handling & Deadlock Avoidance?",
+      "ground_truth": "Section 3.2: Task Groups, Exception Handling & Deadlock Avoidance",
+      "stair_predicted": "Section 3.2: Task Groups, Exception Handling & Deadlock Avoidance",
+      "stair_hit": true,
+      "stair_latency_ms": 0.06,
+      "bm25_section": "Section 3.1: Asyncio Event Loop & Coroutine Mechanics",
+      "bm25_hit": false,
+      "bm25_is_truncated": true,
+      "bm25_latency_ms": 0.31
+    },
+    {
+      "query": "How do I handle asynchronous execution and task lifecycles in 3.1: Asyncio Event Loop & Coroutine Mechanics?",
+      "ground_truth": "Section 3.1: Asyncio Event Loop & Coroutine Mechanics",
+      "stair_predicted": "Section 3.1: Asyncio Event Loop & Coroutine Mechanics",
+      "stair_hit": true,
+      "stair_latency_ms": 0.04,
+      "bm25_section": "Section 3.1: Asyncio Event Loop & Coroutine Mechanics",
+      "bm25_hit": true,
+      "bm25_is_truncated": true,
+      "bm25_latency_ms": 0.22
+    },
+    {
+      "query": "How do I correctly implement Section in 2.2: Structural Pattern Matching & Type Annotations?",
+      "ground_truth": "Section 2.2: Structural Pattern Matching & Type Annotations",
+      "stair_predicted": "Section 2.2: Structural Pattern Matching & Type Annotations",
+      "stair_hit": true,
+      "stair_latency_ms": 0.04,
+      "bm25_section": "Section 2.2: Structural Pattern Matching & Type Annotations",
+      "bm25_hit": true,
+      "bm25_is_truncated": true,
+      "bm25_latency_ms": 0.24
+    },
+    {
+      "query": "Best practices for structured concurrency and exception groups in 4.3: Background Tasks, Middleware & Security OAuth2?",
+      "ground_truth": "Section 4.3: Background Tasks, Middleware & Security OAuth2",
+      "stair_predicted": "Section 4.3: Background Tasks, Middleware & Security OAuth2",
+      "stair_hit": true,
+      "stair_latency_ms": 0.05,
+      "bm25_section": "Section 4.3: Background Tasks, Middleware & Security OAuth2",
+      "bm25_hit": true,
+      "bm25_is_truncated": true,
+      "bm25_latency_ms": 0.13
+    },
+    {
+      "query": "What happens when blocking calls are made inside an event loop in 4.1: Routing, Path Parameters & Request Validation?",
+      "ground_truth": "Section 4.1: Routing, Path Parameters & Request Validation",
+      "stair_predicted": "Section 4.1: Routing, Path Parameters & Request Validation",
+      "stair_hit": true,
+      "stair_latency_ms": 0.04,
+      "bm25_section": "Section 3.1: Asyncio Event Loop & Coroutine Mechanics",
+      "bm25_hit": false,
+      "bm25_is_truncated": true,
+      "bm25_latency_ms": 0.15
+    }
+  ]
+}
