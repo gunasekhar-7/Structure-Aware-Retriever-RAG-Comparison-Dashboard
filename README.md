@@ -44,6 +44,18 @@ Evaluated on a held-out stratified validation dataset (`synthetic_qa_val.jsonl`)
 
 ---
 
+## 📖 Production Documentation Index
+
+Comprehensive enterprise and engineering documentation is maintained in the [`docs/`](file:///c:/Projects/Structure-Aware%20Retriever%20RAG%20Comparison%20Dashboard/docs) directory:
+
+- 🏛️ **[System Architecture & Design Document](docs/ARCHITECTURE.md):** Mathematical foundations, logits masking proofs, component flowcharts, and latency analysis.
+- 🛠️ **[Technology Stack & Decisions](docs/TECH_STACK.md):** Deep-dive into PyMuPDF, Unsloth, Llama-3.2-3B, BitsAndBytes NF4, and hardware resource budgeting.
+- 📋 **[API & Data Contract Specification](docs/API_AND_DATA_SPEC.md):** JSON schemas, dataset specifications, and Python class interfaces.
+- 🔮 **[Future Scope & Roadmap](docs/FUTURE_SCOPE.md):** Multimodal diagrams, multi-hop retrieval, GGUF/llama.cpp GBNF edge deployment, and vLLM microservices.
+- ⚡ **[Kaggle GPU Fine-Tuning Guide](KAGGLE_GPU_GUIDE.md):** Step-by-step instructions for fine-tuning on free Kaggle Tesla T4 GPUs.
+
+---
+
 ## 🛠️ Architecture Overview
 
 ```mermaid
