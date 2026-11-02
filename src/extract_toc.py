@@ -17,3 +17,4 @@ _spec.loader.exec_module(_module)
 
 main = _module.main
 extract_stair_toc = _module.extract_stair_toc
+
