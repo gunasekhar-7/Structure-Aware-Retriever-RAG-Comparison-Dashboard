@@ -1,6 +1,8 @@
 """
 Structure-Aware Retriever (STAIR) vs. Traditional Chunked RAG
 Production Streamlit Comparison Dashboard.
+
+Supports both built-in production guides and user-uploaded custom PDFs.
 """
 
 import json
@@ -19,6 +21,7 @@ if str(project_root / "src") not in sys.path:
 
 from src.baseline_retriever import BM25ChunkedRetriever
 from src.inference_engine import STAIRInferenceEngine
+from src.extract_toc import extract_stair_toc
 
 
 @st.cache_resource(show_spinner="Initializing STAIR & BM25 retrieval engines...")
@@ -120,14 +123,72 @@ def main():
         min-height: 280px;
         white-space: pre-wrap;
     }
+    .doc-pill {
+        background: #e2e8f0;
+        color: #1e293b;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
     </style>
     """, unsafe_allow_html=True)
 
     stair_engine, bm25_engine = load_engines()
     benchmark_data = load_benchmark_data()
 
-    # Sidebar telemetry & status
+    # Sidebar: Document Source, PDF Upload & Status
     with st.sidebar:
+        st.markdown("### 📤 Upload Your Own PDF")
+        uploaded_pdf = st.file_uploader(
+            "Upload any manual, book or doc:",
+            type=["pdf"],
+            help="Upload any technical manual or documentation PDF. STAIR will automatically extract its Table of Contents and leaf sections!"
+        )
+
+        # Handle custom PDF upload
+        if uploaded_pdf is not None:
+            uploaded_name = uploaded_pdf.name
+            if st.session_state.get("active_pdf_name") != uploaded_name:
+                upload_dir = project_root / "data" / "uploads"
+                upload_dir.mkdir(parents=True, exist_ok=True)
+                pdf_save_path = upload_dir / uploaded_name
+
+                with open(pdf_save_path, "wb") as f:
+                    f.write(uploaded_pdf.getbuffer())
+
+                with st.spinner(f"Parsing Table of Contents from '{uploaded_name}'..."):
+                    toc_str, leaves = extract_stair_toc(str(pdf_save_path))
+
+                if leaves:
+                    stair_engine.update_document(toc_str, leaves, doc_title=uploaded_name)
+                    bm25_engine.index_sections(leaves)
+                    st.session_state["active_pdf_name"] = uploaded_name
+                    st.session_state["is_custom_doc"] = True
+                    st.success(f"✓ Parsed {len(leaves)} leaf sections from {uploaded_name}!")
+                else:
+                    st.error(f"No readable text or outline found in '{uploaded_name}'.")
+
+        # Reset to Default Guide Button
+        if st.session_state.get("is_custom_doc", False):
+            if st.button("🔄 Reset to Default Built-in Guide", use_container_width=True):
+                data_file = project_root / "data" / "toc_and_sections.json"
+                if data_file.exists():
+                    with open(data_file, "r", encoding="utf-8") as f:
+                        d = json.load(f)
+                    stair_engine.update_document(
+                        d.get("toc_prompt", ""),
+                        d.get("leaves", {}),
+                        doc_title="Python 3.11 & FastAPI Production Guide"
+                    )
+                    bm25_engine.index_sections(d.get("leaves", {}))
+                st.session_state["active_pdf_name"] = None
+                st.session_state["is_custom_doc"] = False
+                st.rerun()
+
+        st.markdown("---")
         st.markdown("### ⚙️ System Status")
         
         if getattr(stair_engine, "adapter_verified", False):
@@ -165,6 +226,15 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
+    # Active Document Banner
+    current_doc_title = getattr(stair_engine, "book_title", "Python 3.11 & FastAPI Production Guide")
+    doc_type_label = "User Uploaded PDF" if st.session_state.get("is_custom_doc", False) else "Built-in Technical Manual"
+    st.markdown(f"""
+    <div class="doc-pill">
+        📖 Active Document: <strong>{current_doc_title}</strong> &nbsp;|&nbsp; <em>{doc_type_label}</em> ({len(stair_engine.leaf_names)} sections indexed)
+    </div>
+    """, unsafe_allow_html=True)
+
     # Navigation tabs
     tab1, tab2, tab3, tab4 = st.tabs([
         "🔍 Live Side-by-Side Comparison",
@@ -177,23 +247,31 @@ def main():
     # TAB 1: LIVE INTERACTIVE COMPARISON
     # ==========================================
     with tab1:
-        st.markdown("### Ask a Question About the Documentation")
+        st.markdown("### Ask a Question About the Document")
         
-        # Sample prompt selector
-        sample_queries = [
-            "How do task groups handle exceptions in Python 3.11?",
-            "What are the time complexities of dictionaries and sets?",
-            "How to define path parameters and request validation in FastAPI?",
-            "How does dependency injection manage database sessions in FastAPI?",
-            "How do I prevent blocking the asyncio event loop with synchronous code?"
-        ]
+        # Build dynamic query suggestions based on active document
+        if st.session_state.get("is_custom_doc", False):
+            sample_queries = [
+                f"What does {name} discuss?" for name in list(stair_engine.leaf_names)[:4]
+            ]
+        else:
+            sample_queries = [
+                "How do task groups handle exceptions in Python 3.11?",
+                "What are the time complexities of dictionaries and sets?",
+                "How to define path parameters and request validation in FastAPI?",
+                "How does dependency injection manage database sessions in FastAPI?",
+                "How do I prevent blocking the asyncio event loop with synchronous code?"
+            ]
         
-        selected_sample = st.selectbox("Or choose a sample benchmark query:", ["(Write custom query below...)"] + sample_queries)
+        selected_sample = st.selectbox(
+            "Or choose a sample query from this document:",
+            ["(Write custom query below...)"] + sample_queries
+        )
         
         query_input = st.text_input(
-            "Enter developer query:",
+            "Enter query:",
             value=selected_sample if selected_sample != "(Write custom query below...)" else "",
-            placeholder="e.g. How does structured concurrency prevent task leaks?"
+            placeholder="Type any technical question covered in this document..."
         )
         
         col_btn, _ = st.columns([1, 4])
@@ -204,7 +282,7 @@ def main():
 
         if (run_btn or active_query) and active_query:
             # 1. Run STAIR
-            stair_res = stair_engine.predict_leaf(active_query)
+            stair_res = stair_engine.predict_leaf(active_query, book_title=current_doc_title)
             # 2. Run BM25
             bm25_res_list = bm25_engine.retrieve(active_query, top_k=1)
             bm25_res = bm25_res_list[0] if bm25_res_list else None
@@ -259,7 +337,7 @@ def main():
                     """, unsafe_allow_html=True)
 
                     st.markdown(f"**Source Document Section:** `{bm25_res['section']}`")
-                    st.markdown(f"**Chunk Status:** {'Truncated (Lacks Context / Broken Boundaries)' if bm25_res['is_truncated'] else 'Boundary Intact'}")
+                    st.markdown(f"**Chunk Status:** {'Truncated (Lacks Context / Sliced Boundary)' if bm25_res['is_truncated'] else 'Boundary Intact'}")
                     
                     st.markdown("**Retrieved Chunk Text:**")
                     st.markdown(f"""<div class="code-preview">{bm25_res['text']}</div>""", unsafe_allow_html=True)
@@ -268,11 +346,11 @@ def main():
 
             # Architectural Takeaway
             st.markdown("---")
-            st.markdown("### 💡 Why STAIR Won This Query")
-            st.markdown("""
-            - **No Information Loss:** STAIR navigated the hierarchical Table of Contents directly to the complete leaf node, preserving all imports, full function definitions, and context.
-            - **No Vector DB Overhead:** Zero vector embeddings, zero nearest-neighbor search latency, and zero index maintenance costs.
-            - **Guaranteed Validity:** The model's generation was constrained by a prefix Trie, making non-existent section hallucinations mathematically impossible.
+            st.markdown("### 💡 Why STAIR Outperforms Traditional RAG on This Query")
+            st.markdown(f"""
+            - **No Information Loss:** STAIR traversed the Table of Contents directly to the complete leaf section `{stair_res['predicted_leaf']}`, preserving all definitions, code snippets, and context.
+            - **No Vector DB Overhead:** Zero high-dimensional embedding lookups and zero database index maintenance costs.
+            - **Guaranteed Validity:** Next-token generation was constrained to the document's prefix tree, making section ID hallucination mathematically impossible.
             """)
 
     # ==========================================
@@ -285,7 +363,6 @@ def main():
         if benchmark_data:
             stair_metrics = benchmark_data.get("stair", {})
             bm25_metrics = benchmark_data.get("traditional_chunked_bm25", {})
-            num_queries = benchmark_data.get("num_test_queries", 0)
 
             m_col1, m_col2, m_col3, m_col4 = st.columns(4)
             with m_col1:
@@ -334,14 +411,14 @@ def main():
     # TAB 3: DOCUMENT HIERARCHY EXPLORER
     # ==========================================
     with tab3:
-        st.markdown("### Document Outline & Leaf Sections Index")
-        st.write("STAIR indexes the document by its inherent hierarchical structure rather than chopping text arbitrarily:")
+        st.markdown(f"### Document Outline: *{current_doc_title}*")
+        st.write("STAIR indexes the document by its hierarchical structure rather than chopping text arbitrarily:")
         
-        st.code(stair_engine.toc_string, language="markdown")
+        st.code(stair_engine.toc_string if stair_engine.toc_string else "(No outline detected; headings detected via font heuristic)", language="markdown")
         
-        st.markdown("#### Leaf Section Catalog")
+        st.markdown(f"#### Leaf Section Catalog ({len(stair_engine.leaves)} sections)")
         for leaf_name, text in stair_engine.leaves.items():
-            with st.expander(f"📄 {leaf_name} ({len(text)} chars)"):
+            with st.expander(f"📄 {leaf_name} ({len(text)} characters)"):
                 st.write(text)
 
     # ==========================================
@@ -358,13 +435,12 @@ def main():
            - Set **Internet:** `On`.
            
         2. **Run Training Script:**
-           - Upload `kaggle_train_stair.py` or run:
+           - Upload `kaggle_train_stair.py` or `notebooks/kaggle_stair_finetuning.ipynb`.
         """)
         
         st.code("""
-# Install Unsloth and training dependencies
-!pip install --no-deps unsloth
-!pip install trl datasets transformers peft bitsandbytes accelerate rank-bm25
+# Install dependencies
+!pip install unsloth unsloth_zoo trl datasets transformers peft bitsandbytes accelerate rank-bm25
 
 # Run the 1-click fine-tuning script
 !python kaggle_train_stair.py

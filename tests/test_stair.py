@@ -112,3 +112,24 @@ def test_stair_toc_breadcrumb_path():
     assert "Chapter 3" in breadcrumb
     assert "Section 3.2" in breadcrumb
 
+
+def test_stair_dynamic_document_update():
+    """Verify engine dynamically re-indexes user-uploaded documents in memory."""
+    engine = STAIRInferenceEngine()
+    new_leaves = {
+        "UserSection 1: Distributed Consensus": "Raft and Paxos consensus algorithms for distributed state machines.",
+        "UserSection 2: Vector Embeddings": "High dimensional vector similarity using HNSW and cosine distance."
+    }
+    new_toc = "Chapter 1\n    leaf UserSection 1: Distributed Consensus\nChapter 2\n    leaf UserSection 2: Vector Embeddings"
+    
+    engine.update_document(new_toc, new_leaves, doc_title="Distributed Systems Manual")
+    assert len(engine.leaf_names) == 2
+    assert "UserSection 1: Distributed Consensus" in engine.leaf_names
+    
+    # Query the newly updated document
+    res = engine.predict_leaf("How does Raft maintain consistency across state machines?")
+    assert res["is_valid"] is True
+    assert res["predicted_leaf"] == "UserSection 1: Distributed Consensus"
+    assert "Raft and Paxos" in res["section_text"]
+
+

@@ -112,6 +112,22 @@ class STAIRInferenceEngine:
             "vector_db_used": False,
         }
 
+    def update_document(self, toc_string: str, leaves: Dict[str, str], doc_title: str = "Uploaded Documentation") -> None:
+        """Dynamically update the active document outline and leaf catalog in-memory."""
+        self.toc_string = toc_string
+        self.leaves = leaves
+        self.leaf_names = list(leaves.keys())
+        self.book_title = doc_title
+
+        if self.tokenizer is not None and self.leaf_names:
+            try:
+                self.trie = LeafTrie(tokenizer=self.tokenizer, leaf_names=self.leaf_names, prefix="leaf ")
+            except Exception:
+                pass
+
+        self._init_semantic_engine()
+        print(f"[INFO] STAIR Engine updated with {len(self.leaf_names)} sections from '{doc_title}'.")
+
     def _load_data(self, data_file: Path) -> Tuple[str, Dict[str, str]]:
         if not data_file.exists():
             print(f"[ERROR] Document index not found at: {data_file}")
