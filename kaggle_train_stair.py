@@ -25,8 +25,7 @@ else:
     print("⚠️ WARNING: No CUDA GPU detected! Running on CPU.")
 print("=" * 60)
 
-from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
-from transformers import TrainingArguments
+from trl import SFTTrainer
 from datasets import load_dataset
 
 # 1. Configuration parameters
@@ -220,45 +219,70 @@ val_dataset = load_dataset("json", data_files=VAL_FILE, split="train")
 print(f"✓ Train dataset loaded: {len(train_dataset)} examples")
 print(f"✓ Val dataset loaded:   {len(val_dataset)} examples")
 
-# 4. Format Prompts & Completion Collator
-def formatting_prompts_func(examples):
-    return [p + c + tokenizer.eos_token for p, c in zip(examples["prompt"], examples["completion"])]
+# 4. Training Arguments (Compatible with SFTConfig and TrainingArguments)
+try:
+    from trl import SFTConfig
+    training_args = SFTConfig(
+        output_dir=OUTPUT_DIR,
+        per_device_train_batch_size=2,
+        gradient_accumulation_steps=4,
+        learning_rate=2e-4,
+        lr_scheduler_type="cosine",
+        warmup_ratio=0.05,
+        num_train_epochs=3,
+        fp16=torch.cuda.is_available(),
+        logging_steps=5,
+        eval_strategy="epoch",
+        save_strategy="epoch",
+        save_total_limit=2,
+        load_best_model_at_end=True,
+        report_to="none",
+        max_length=MAX_SEQ_LENGTH,
+    )
+except ImportError:
+    from transformers import TrainingArguments
+    training_args = TrainingArguments(
+        output_dir=OUTPUT_DIR,
+        per_device_train_batch_size=2,
+        gradient_accumulation_steps=4,
+        learning_rate=2e-4,
+        lr_scheduler_type="cosine",
+        warmup_ratio=0.05,
+        num_train_epochs=3,
+        fp16=torch.cuda.is_available(),
+        logging_steps=5,
+        eval_strategy="epoch",
+        save_strategy="epoch",
+        save_total_limit=2,
+        load_best_model_at_end=True,
+        report_to="none",
+    )
 
-collator = DataCollatorForCompletionOnlyLM(
-    response_template="### Section: leaf ",
-    tokenizer=tokenizer
-)
+# 5. Check for legacy DataCollator vs native completion-only loss
+collator = None
+formatting_func = None
+try:
+    from trl import DataCollatorForCompletionOnlyLM
+    collator = DataCollatorForCompletionOnlyLM(response_template="### Section: leaf ", tokenizer=tokenizer)
+    formatting_func = lambda ex: [p + c + tokenizer.eos_token for p, c in zip(ex["prompt"], ex["completion"])]
+except ImportError:
+    collator = None
+    formatting_func = None
 
-# 5. Training Arguments optimized for Kaggle T4
-training_args = TrainingArguments(
-    output_dir=OUTPUT_DIR,
-    per_device_train_batch_size=2,
-    gradient_accumulation_steps=4,
-    learning_rate=2e-4,
-    lr_scheduler_type="cosine",
-    warmup_ratio=0.05,
-    num_train_epochs=3,
-    fp16=torch.cuda.is_available(),
-    logging_steps=5,
-    eval_strategy="epoch",
-    save_strategy="epoch",
-    save_total_limit=2,
-    load_best_model_at_end=True,
-    report_to="none",
-    remove_unused_columns=False,
-    dataloader_pin_memory=False,
-)
+trainer_kwargs = {
+    "model": model,
+    "train_dataset": train_dataset,
+    "eval_dataset": val_dataset,
+    "args": training_args,
+}
+if tokenizer is not None:
+    trainer_kwargs["processing_class"] = tokenizer
+if collator is not None:
+    trainer_kwargs["data_collator"] = collator
+if formatting_func is not None:
+    trainer_kwargs["formatting_func"] = formatting_func
 
-trainer = SFTTrainer(
-    model=model,
-    tokenizer=tokenizer,
-    train_dataset=train_dataset,
-    eval_dataset=val_dataset,
-    formatting_func=formatting_prompts_func,
-    data_collator=collator,
-    max_seq_length=MAX_SEQ_LENGTH,
-    args=training_args,
-)
+trainer = SFTTrainer(**trainer_kwargs)
 
 print("\n🚀 Starting Fine-Tuning...")
 trainer.train()
@@ -266,7 +290,8 @@ trainer.train()
 # 6. Save Adapter & Export as Zip for 1-Click Download
 print(f"\n[INFO] Saving LoRA adapter to {OUTPUT_DIR}...")
 model.save_pretrained(OUTPUT_DIR)
-tokenizer.save_pretrained(OUTPUT_DIR)
+if tokenizer is not None:
+    tokenizer.save_pretrained(OUTPUT_DIR)
 
 zip_filename = "stair_lora_adapter.zip"
 print(f"[INFO] Packaging adapter into {zip_filename} for download...")
