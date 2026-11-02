@@ -160,3 +160,4 @@ To benchmark STAIR objectively against traditional RAG:
 | **Boundary Preservation** | $0\%$ (arbitrary token slicing) | **$100\%$ (Complete semantic leaf sections)** |
 | **Section Hallucination** | Frequent when LLM synthesizes from chunks | **$0.00\%$ guaranteed by Trie constraint** |
 | **Vector DB Cost** | Monthly hosted cluster fee | **Zero (Vectorless)** |
+

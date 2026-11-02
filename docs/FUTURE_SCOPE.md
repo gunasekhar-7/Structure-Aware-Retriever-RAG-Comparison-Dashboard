@@ -97,3 +97,4 @@ flowchart TD
     }
     ```
   - Horizontal scaling via Kubernetes with HPA (Horizontal Pod Autoscaler) triggered by queue latency.
+

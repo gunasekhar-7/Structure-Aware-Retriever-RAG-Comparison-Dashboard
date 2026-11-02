@@ -89,3 +89,4 @@ This document details every technology, framework, and architectural design choi
 - **LoRA Adapter Footprint:** $\sim 97\text{ MB}$ ($r=16, \alpha=32$).
 - **Activation Memory Peak:** $\sim 3.2\text{ GB}$ with gradient checkpointing.
 - **Total Headroom:** $> 10\text{ GB}$ free VRAM on 16GB T4.
+

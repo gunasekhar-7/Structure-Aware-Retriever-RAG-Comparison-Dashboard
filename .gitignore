@@ -1,40 +1,111 @@
-# Python
+# ==============================================================================
+# Byte-compiled / Optimized / C-Extension Files
+# ==============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==============================================================================
+# Virtual Environments
+# ==============================================================================
 env/
 venv/
 .venv/
 ENV/
+env.bak/
+venv.bak/
 
-# PyTorch / Models / Checkpoints
+# ==============================================================================
+# ML Models, Adapters, Checkpoints & Large Binaries
+# ==============================================================================
+# Model weights & quantized formats
 *.pt
 *.bin
 *.safetensors
+*.pth
+*.onnx
+*.gguf
+
+# Trained LoRA adapters & local training output
 stair_lora_adapter/
 stair_lora_adapter_*/
 checkpoint-*/
+tmp_out/
 runs/
 wandb/
+.cache/
 
-# Data & PDF files (exclude large binaries, keep sample data)
+# Archives & Large Compressed Bundles
+*.zip
+*.tar.gz
+*.tar
+*.gz
+*.7z
+*.rar
+
+# ==============================================================================
+# User-Uploaded Documents & PDF Raw Files
+# ==============================================================================
 data/*.pdf
+data/uploads/
 *.log
 
-# Environment variables
-.env
-.env.local
+# Explicitly ensure sample reference data remains tracked
+!data/toc_and_sections.json
+!data/synthetic_qa_train.jsonl
+!data/synthetic_qa_val.jsonl
+!data/benchmark_results.json
 
-# IDE & OS
+# ==============================================================================
+# Jupyter Notebook Checkpoints
+# ==============================================================================
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# ==============================================================================
+# Environment Variables & Secrets
+# ==============================================================================
+.env
+.env.*
+!.env.example
+
+# ==============================================================================
+# IDEs & Operating System Artifacts
+# ==============================================================================
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 .DS_Store
 Thumbs.db
+ehthumbs.db
+desktop.ini
 
-# Test & Coverage
+# ==============================================================================
+# Testing & Code Coverage
+# ==============================================================================
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
-
+.hypothesis/
